@@ -1,5 +1,6 @@
 import { Context, Logger, Schema } from 'koishi'
 import { platform } from 'os'
+import { build, find } from './nix'
 
 export interface Config {
   debug: boolean
@@ -15,9 +16,13 @@ export const name = 'nix'
 
 const logger = new Logger('nix')
 
-function apply(ctx: Context) {
+export async function apply(ctx: Context) {
   if (platform() !== 'linux') {
     logger.info('nix plugin only works on linux')
+    return
+  }
+  if (!await find()) {
+    logger.info('nix is not installed')
     return
   }
 }
