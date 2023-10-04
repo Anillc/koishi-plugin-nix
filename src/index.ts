@@ -1,6 +1,9 @@
 import { Context, Logger, Schema, Service } from 'koishi'
 import { platform } from 'os'
 import { expr, find, flake } from './nix'
+import { exec } from './utils'
+
+export * from './nix'
 
 declare module 'koishi' {
   interface Context {
@@ -35,8 +38,12 @@ export async function apply(ctx: Context) {
 }
 
 export class NixService extends Service {
-  async packages(packages: string[]) {
-    const list = packages.map((pkg) => `(${pkg})`).join(' ')
+  constructor(ctx: Context) {
+    super(ctx, 'nix')
+  }
+
+  async packages(...packages: string[]) {
+    const list = packages.map(pkg => `(${pkg})`).join(' ')
     return await expr(this.ctx, `
       with import <nixpkgs> {}; [ ${list} ]
     `)
@@ -44,5 +51,11 @@ export class NixService extends Service {
 
   async flake(path: string, attr: string) {
     return await flake(this.ctx, path, attr)
+  }
+
+  async patch(bin: string, interpreter: string, rpath: string[]) {
+    const [{ outputs: { out: patchelf } }] = await this.packages('patchelf')
+    const paths = ['$ORIGIN', ...rpath].join(':')
+    await exec(`${patchelf}/bin/patchelf`, ['--set-rpath', paths, '--set-interpreter', interpreter, bin])
   }
 }

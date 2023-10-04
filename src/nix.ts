@@ -1,6 +1,6 @@
-import { spawn } from 'child_process'
 import which from 'which'
 import { Context } from 'koishi'
+import { exec } from './utils'
 
 let bin: string
 export async function find() {
@@ -16,25 +16,20 @@ export async function nix(ctx: Context, ...args: string[]): Promise<string> {
   if (ctx.config.substituters) {
     args.unshift('--option', 'substituters', ctx.config.substituters.join(' '))
   }
-  const child = spawn(await find(), args, { stdio: ['pipe', 'pipe', process.stderr] })
-  return new Promise(async (resolve, reject) => {
-    child.on('exit', (code) => code === 0
-      ? resolve(Buffer.concat(buffers).toString())
-      : reject())
-    const buffers = []
-    for await (const data of child.stdout) {
-      buffers.push(data)
-      process.stdout.write(data)
-    }
-  })
+  return await exec(await find(), args)
 }
 
-export async function expr(ctx: Context, expr: string): Promise<Record<string, string>[]> {
+export interface Build {
+  drvPath: string
+  outputs: Record<string, string>
+}
+
+export async function expr(ctx: Context, expr: string): Promise<Build[]> {
   const result = await nix(ctx, 'build', '--no-link', '--json', '--impure', '--expr', expr)
   return JSON.parse(result)
 }
 
-export async function flake(ctx: Context, path: string, attr: string): Promise<Record<string, string>[]> {
+export async function flake(ctx: Context, path: string, attr: string): Promise<Build[]> {
   const result = await nix(ctx, 'build', '--no-link', '--json', `${path}#${attr}`)
   return JSON.parse(result)
 }
