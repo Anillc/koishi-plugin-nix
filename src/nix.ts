@@ -29,7 +29,12 @@ export async function nix(ctx: Context, ...args: string[]): Promise<string> {
   })
 }
 
-export async function build(ctx: Context, expr: string): Promise<Record<string, string>> {
+export async function expr(ctx: Context, expr: string): Promise<Record<string, string>[]> {
   const result = await nix(ctx, 'build', '--no-link', '--json', '--impure', '--expr', expr)
-  return JSON.parse(result)[0].outputs
+  return JSON.parse(result)
+}
+
+export async function flake(ctx: Context, path: string, attr: string): Promise<Record<string, string>[]> {
+  const result = await nix(ctx, 'build', '--no-link', '--json', `${path}#${attr}`)
+  return JSON.parse(result)
 }

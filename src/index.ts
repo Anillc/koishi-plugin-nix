@@ -1,6 +1,12 @@
-import { Context, Logger, Schema } from 'koishi'
+import { Context, Logger, Schema, Service } from 'koishi'
 import { platform } from 'os'
-import { build, find } from './nix'
+import { expr, find, flake } from './nix'
+
+declare module 'koishi' {
+  interface Context {
+    nix: NixService
+  }
+}
 
 export interface Config {
   debug: boolean
@@ -24,5 +30,19 @@ export async function apply(ctx: Context) {
   if (!await find()) {
     logger.info('nix is not installed')
     return
+  }
+  ctx.plugin(NixService)
+}
+
+export class NixService extends Service {
+  async packages(packages: string[]) {
+    const list = packages.map((pkg) => `(${pkg})`).join(' ')
+    return await expr(this.ctx, `
+      with import <nixpkgs> {}; [ ${list} ]
+    `)
+  }
+
+  async flake(path: string, attr: string) {
+    return await flake(this.ctx, path, attr)
   }
 }
