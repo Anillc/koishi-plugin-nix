@@ -26,19 +26,20 @@ export const name = 'nix'
 const logger = new Logger('nix')
 
 export async function apply(ctx: Context) {
+  let avaliable = true
   if (platform() !== 'linux') {
     logger.info('nix plugin only works on linux')
-    return
+    avaliable = false
   }
   if (!await find()) {
     logger.info('nix is not installed')
-    return
+    avaliable = false
   }
-  ctx.plugin(NixService)
+  ctx.plugin(NixService, avaliable)
 }
 
 export class NixService extends Service {
-  constructor(ctx: Context) {
+  constructor(ctx: Context, public avaliable: boolean) {
     super(ctx, 'nix')
   }
 
