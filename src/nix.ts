@@ -8,6 +8,15 @@ export async function find() {
   return bin = await which('nix', { nothrow: true })
 }
 
+let pe: string
+export async function patchelf(ctx: Context) {
+  if (pe) return pe
+  const [{ outputs: { out: patchelf } }] = await expr(ctx, `
+    with import <nixpkgs> {}; [ patchelf ]
+  `)
+  return pe = `${patchelf}/bin/patchelf`
+}
+
 export async function nix(ctx: Context, ...args: string[]): Promise<string> {
   args.unshift('--experimental-features', 'flakes nix-command')
   if (ctx.config.debug) {
