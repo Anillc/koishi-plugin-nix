@@ -58,4 +58,8 @@ export class NixService extends Service {
     const paths = ['$ORIGIN', ...rpath].join(':')
     await exec(`${patchelf}/bin/patchelf`, ['--set-rpath', paths, '--set-interpreter', interpreter, bin])
   }
+
+  async patchdir(path: string, ...packages: string[]) {
+    
+  }
 }
