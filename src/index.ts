@@ -1,7 +1,7 @@
 import { Context, Logger, Schema, Service } from 'koishi'
 import { platform } from 'os'
 import { expr, find, flake } from './nix'
-import { exec } from './utils'
+import { exec, findExecuables } from './utils'
 
 export * from './nix'
 
@@ -53,13 +53,20 @@ export class NixService extends Service {
     return await flake(this.ctx, path, attr)
   }
 
-  async patch(bin: string, interpreter: string, rpath: string[]) {
+  async patch(bin: string, rpath: string[]) {
     const [{ outputs: { out: patchelf } }] = await this.packages('patchelf')
     const paths = ['$ORIGIN', ...rpath].join(':')
-    await exec(`${patchelf}/bin/patchelf`, ['--set-rpath', paths, '--set-interpreter', interpreter, bin])
+    await exec(`${patchelf}/bin/patchelf`, ['--set-rpath', paths, bin])
   }
 
-  async patchdir(path: string, ...packages: string[]) {
-    
+  async patchdir(path: string, rpath: string[]) {
+    const execuables = await findExecuables(path)
+    for (const execuable of execuables) {
+      try {
+        await this.patch(execuable, rpath)
+      } catch (e) {
+        logger.error(e)
+      }
+    }
   }
 }

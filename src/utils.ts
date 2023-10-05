@@ -16,7 +16,7 @@ export async function exec(program: string, args: string[]): Promise<string> {
   })
 }
 
-export async function findExecuables(path: string, base: string, visited: string[] = []): Promise<string[]> {
+export async function findExecuables(path: string, base = path, visited: string[] = []): Promise<string[]> {
   try {
     const stat = await fsp.lstat(path)
     if (stat.isSymbolicLink()) {
