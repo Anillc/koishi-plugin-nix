@@ -43,11 +43,16 @@ export class NixService extends Service {
     super(ctx, 'nix')
   }
 
-  async packages(...packages: string[]) {
-    const list = packages.map(pkg => `(${pkg})`).join(' ')
-    return await expr(this.ctx, `
+  async packages(...packages: (string | [name: string, output: string])[]) {
+    const list = packages.map(pkg =>
+      `(${typeof pkg === 'string' ? pkg : pkg.join('.')})`).join(' ')
+    const builds = (await expr(this.ctx, `
       with import <nixpkgs> {}; [ ${list} ]
-    `)
+    `))
+    return builds.map((build, i) => {
+      const name = typeof packages[i] === 'string' ? 'out' : packages[i][1]
+      return build.outputs[name]
+    })
   }
 
   async flake(path: string, attr: string) {
