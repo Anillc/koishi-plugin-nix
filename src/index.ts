@@ -44,15 +44,13 @@ export class NixService extends Service {
   }
 
   async packages(...packages: (string | [name: string, output: string])[]) {
-    const list = packages.map(pkg =>
-      `(${typeof pkg === 'string' ? pkg : pkg.join('.')})`).join(' ')
-    const builds = (await expr(this.ctx, `
-      with import <nixpkgs> {}; [ ${list} ]
-    `))
-    return builds.map((build, i) => {
-      const name = typeof packages[i] === 'string' ? 'out' : packages[i][1]
-      return build.outputs[name]
-    })
+    const results: string[] = []
+    for (const pkg of packages) {
+      const name = typeof pkg === 'string' ? pkg : pkg.join('.')
+      const [build] = await expr(this.ctx, `with import <nixpkgs> {}; (${name})`)
+      results.push(build.outputs[typeof pkg === 'string' ? 'out' : pkg[1]])
+    }
+    return results
   }
 
   async flake(path: string, attr: string) {
